@@ -182,3 +182,64 @@ rc-service virtualbox-drm-client start
 rc-update add virtualbox-drm-client default
 ```
 
+## Etape 3 : Installation et configuration de MicroCore
+
+Cette étape consiste à créer et configurer une machine virtuelle sous la distribution MicroCore. Cette machine servira de template dans le cas où on voudrais mettre en place des machines MicroCore dans le NetLab.
+
+### Configuration minimal de la machine
+
+- Mémoire vive : 512 MB
+- Processeur : 1
+- Stockage : 150 MB
+
+### Installation et configuration de la machine MicroCore
+
+Une particularité de MicroCore est d’être un système non persistant (les modifications du système sont
+perdues au redémarrage).
+
+Les étapes ci-dessous permettent de configurer GRUB et de rendre les dossiers utilisateurs `/home` et logiciels `/opt` persistants.
+
+```shell
+tce-load -w -i openssl.tcz
+wget git.io/tinycore-install
+sh tinycore-install
+```
+
+Il reste plus qu'à éteindre la machine et enlever manuellement l'ISO depuis l'interface de VirtualBox.
+
+Intégration automatique du clavier AZERTY :
+
+Pour rendre persistant la configuration du clavier AZERTY, il faut installer le package `kmaps` : `tce-load -wi kmaps`.
+
+D'autre part il faut ajouter la ligne ci-dessous dans le fichier `/opt/bootlocal.sh` :
+
+```bash
+#!/bin/bash
+...
+
+sudo loadkmap < /usr/share/kmap/fr-latin9.kmap
+
+...
+```
+
+Installation des packages `iproute2` et `tcpdump` : `tce-load -wi iproute2 tcpdump`.
+
+Installation de IPV6 :
+
+En premier lieu il faut chercher les paquets disponible pour la version de ma distribution de core avec la commande `​tce-ab`​.
+
+Pour Core 6.4 la version retenu du paquet ipv6 est : `​ipv6-3.16.6-tinycore.tcz​`.
+
+Pour l'installer il suffit de taper la commande suivante : `tce-load -wi ipv6-3.16.6-tinycore.tcz`.
+
+Pour finir il faut activer le module et le rendre persistant, pour cela il faut ajouter de nouveau dans le fichier `/opt/bootlocal.sh` la ligne ci-dessous :
+
+```bash
+#!/bin/bash
+...
+
+sudo modprobe ipv6
+
+...
+```
+
