@@ -80,7 +80,7 @@ apk add grub grub-bios
 grub-install /dev/sda
 ```
 
-Configuration du script `/etc/grub.d/40_custom`, ce script permet d'ajouter des menu d'entrée personalisée dans grub :
+Configuration du script `/etc/grub.d/40_custom`, ce script permet d'ajouter des menu d'entrée personalisé dans grub :
 
 ```bash
 #!bin/sh
@@ -103,7 +103,7 @@ Explication du script :
 
 Dans ce script, on ajoute 2 entrées. J'ai ajouté un argument `graphical=<true | false>` qui va permettre de différencier le mode console au mode graphique. En effet à chaque démarrage de la machine en fonction de l'entrée qu'on choisit la variable graphical sera initialisé.
 
-Par la suite, on doit créer un script dans `/etc/local.d/setup-gui.start` qui va  s'éxectuer à chaque démarrage, cela va permettre de charger l'interface graphique en fonction de si l'utilisateur choisit le mode graphique ou le mode console :
+Par la suite, on doit créer un script dans `/etc/local.d/setup-gui.start` qui va  s'exécuter à chaque démarrage, cela va permettre de charger l'interface graphique en fonction de si l'utilisateur choisit le mode graphique ou le mode console :
 
 ```bash
 #!/bin/bash
@@ -154,5 +154,31 @@ GRUB_DISABLE_OS_PROBER=false
 
 Il ne reste plus qu'à charger le nouveau fichier de configuration grub : `grub-mkconfig -o /boot/grub/grub.cfg`.
 
-Après un reboot la machine devra charger les 2 menus d'entrées et permettre de choisir entre le mode console et graphique.
+Après un reboot la machine va charger les 2 menus d'entrées et permettre de choisir entre le mode console et graphique.
+
+Installation des packages demandés :
+
+```shell
+apk add filezilla
+apk add tcpdump
+apk add wireshark
+apk add putty
+apk add openssh
+rc-update add sshd
+rc-service sshd start
+```
+
+> [!INFO]
+> Il est préférable de mettre en place les paquets invités VirtualBox depuis l'interface graphique.
+
+Installation et mise en place des paquets invités VirtualBox :
+
+```shell
+apk add virtualbox-guest-additions
+apk add virtualbox-guest-additions-x11
+rc-service virtualbox-guest-additions start
+rc-update add virtualbox-guest-additions boot
+rc-service virtualbox-drm-client start
+rc-update add virtualbox-drm-client default
+```
 
