@@ -168,7 +168,7 @@ rc-update add sshd
 rc-service sshd start
 ```
 
-> [!INFO]
+> [!NOTE]
 > Il est préférable de mettre en place les paquets invités VirtualBox depuis l'interface graphique.
 
 Installation et mise en place des paquets invités VirtualBox :
