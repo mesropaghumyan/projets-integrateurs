@@ -4,7 +4,7 @@
 
 Cette étape consiste à mettre en place une template du routeur VyOS qu'on va pouvoir réutiliser pour mettre en place le réseau NetLab dans l'étape 5.
 
-### Configuration minimal de la machine
+### Configuration minimale de la machine
 
 - Mémoire vive : 1000 Mo
 - Processeur : 1
@@ -48,7 +48,7 @@ clonée, les interfaces réseaux devront se nommer eth0 et eth1.
 
 Cette étape consiste à créer et configurer une machine virtuelle sous la distribution Alpine. Cette machine servira de template dans le cas où on voudrais mettre en place des machines Alpine dans le NetLab.
 
-### Configuration minimal de la machine
+### Configuration minimale de la machine
 
 - Mémoire vive : 512 Mo
 - Processeur : 1
@@ -186,7 +186,7 @@ rc-update add virtualbox-drm-client default
 
 Cette étape consiste à créer et configurer une machine virtuelle sous la distribution MicroCore. Cette machine servira de template dans le cas où on voudrais mettre en place des machines MicroCore dans le NetLab.
 
-### Configuration minimal de la machine
+### Configuration minimale de la machine
 
 - Mémoire vive : 512 MB
 - Processeur : 1
@@ -243,3 +243,66 @@ sudo modprobe ipv6
 ...
 ```
 
+## Etape 4 :  ifshow, la commande pour lister les interfaces réseaux de la machine locale.
+
+ifshow est une commande en ligne à développer en langage C sous Linux. Elle
+affiche la liste des interfaces réseaux de la machine locale et leurs
+caractéristiques. Le comportement de la commande dépend des paramètres qui
+lui sont associées :
+
+- ifshow -i ifname : affiche la liste des préfixes d’adresses IPv4 et IPv6
+associées à l’interface nommée ifname. (un préfixe s’écrit sous la forme d.d.d.d/p pour IPv4 et d:d:d:d:d:d:d:d/p pour IPv6) ;
+- ifshow -a : affiche la liste des noms des interfaces réseaux, et leurs préfixes
+d’adresses IPv4 et IPv6.
+
+Lien du code source : https://github.com/mesropaghumyan/projets-integrateurs/tree/master/ifshow
+
+### Intégration dans VyOS :
+
+VyOS ne permet pas de compiler du C avec ```gcc```. Pour palier à ce problème, j'ai mis en place un serveur apache sur le WSL de ma machine hôte, dans lequel j'ai mis le compilé de ifshow.
+
+Sur ma machine VyOS je n'ai plus qu'à récupérer le compilé présent sur le serveur Apache et le placer dans `/usr/local/bin` :
+
+```shell
+wget http://172.17.171.46/ifshow
+chmod +x ./ifshow
+mv ifshow /usr/local/bin/ifshow
+```
+
+### Intégration dans Alpine :
+
+Sur une machine Alpine vous aurez besoins des paquets `musl-dev` et `gcompat` contenant respectivement dans l'un les fichiers de développement de la bibliothèque C standard et dans l'autre les outils nécessaires pour exécuter des binaires sous Linux : `apk add musl-dev gcompat`.
+
+Ensuite il faut récupérer le compilé présent sur le serveur Apache et le placer dans `/usr/local/bin` :
+
+```shell
+wget http://172.17.171.46/ifshow
+chmod +x ./ifshow
+mv ifshow /usr/local/bin/ifshow
+```
+
+### Intégration dans MicroCore :
+
+Sur une machine MicroCore vous aurez besoins des paquets `gcc` et `compiletc` : `tce-load -wi gcc compiletc`.
+
+Ensuite il faut récupérer le fichier `.c` présent sur le serveur Apache, le compiler et le placer dans `/usr/local/bin`.
+
+Pour que la commande `ifshow` soit persistante sur la machine il faut en premier lieu installer le fichier `.c` dans le répertoire `/opt` :
+
+```shell
+cd /opt/
+wget http://172.17.171.46/ifshow.c
+```
+
+Ensuite il faut ajouter dans le fichier `/opt/bootlocal.sh` les lignes ci-dessous :
+
+```bash
+#!/bin/bash
+...
+
+gcc -o /opt/ifshow /opt/ifshow.c
+chmod +x /opt/ifshow
+mv  /opt/ifshow /usr/local/bin/ifshow
+
+...
+```
