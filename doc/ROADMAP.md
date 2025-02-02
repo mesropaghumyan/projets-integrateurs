@@ -70,3 +70,89 @@ Alpine met à disposition un script qui permet d'installer automatiquement le mo
 
 > [!WARNING]
 > Avant de lancer `setup-desktop`, il faut s'assurer avoir préalablement installé le package `bash`, essentiel pour installer les différents modules de l'interface graphique : `apk add bash`. De plus lors de l'installation, le script va demander de choisir une interface, je recommande l'interface `xfce` dût à sa légèreté.
+
+### Installation et configuration de GRUB
+
+Installation de GRUB :
+
+```shell
+apk add grub grub-bios
+grub-install /dev/sda
+```
+
+Configuration du script `/etc/grub.d/40_custom`, ce script permet d'ajouter des menu d'entrée personalisée dans grub :
+
+```bash
+#!bin/sh
+exec tail -n +3 s0
+
+menu entry "Alpine Linux (Mode Graphique)" {
+	set root=(hd0,1)
+	linux /boot/vmlinuz-lts root=/dev/sda3 quiet graphical=true modules=sd-mod,usb-storage,ext4
+	initrd /boot/initramfs-lts
+}
+
+menu entry "Alpine Linux (Mode Console)" {
+	set root=(hd0,1)
+	linux /boot/vmlinuz-lts root=/dev/sda3 quiet graphical=false modules=sd-mod,usb-storage,ext4
+	initrd /boot/initramfs-lts
+}
+```
+
+Explication du script :
+
+Dans ce script, on ajoute 2 entrées. J'ai ajouté un argument `graphical=<true | false>` qui va permettre de différencier le mode console au mode graphique. En effet à chaque démarrage de la machine en fonction de l'entrée qu'on choisit la variable graphical sera initialisé.
+
+Par la suite, on doit créer un script dans `/etc/local.d/setup-gui.start` qui va  s'éxectuer à chaque démarrage, cela va permettre de charger l'interface graphique en fonction de si l'utilisateur choisit le mode graphique ou le mode console :
+
+```bash
+#!/bin/bash
+
+CMDLINE_FILE="/proc/cmdline"
+
+if grep -q "graphical=true" "$CMDLINE_FILE"; then
+    rc-update add lightdm default
+    if ! rc-service lightdm status > /dev/null 2>&1; then
+        rc-service lightdm start
+    fi
+else
+    rc-service lightdm stop
+    rc-update del lightdm default
+    openrc default
+fi
+```
+
+Donner les droits d'éxécution sur le script : `chmod +x /etc/local.d/setup-gui.start`.
+
+Pour que le script s'active à chaque démarrage et extinction il faut également activer le service local :
+
+```shell
+rc-update add local default
+rc-service local start
+```
+
+Enfin pour pouvoir charger le mode graphique il faut également activer le service dbus :
+
+```shell
+rc-update add dbus
+rc-service dbus start
+```
+
+De plus il faut également configurer le fichier de configuration de GRUB `​/etc/default/grub​` qui permet de définir les paramètres généraux du menu de démarrage :
+
+```text
+GRUB_DISTRIBUTOR="Alpine"
+GRUB_TIMEOUT=5
+GRUB_DISABLE_SUBMENU=true
+GRUB_DISABLE_RECOVERY=true
+GRUB_CMDLINE_LINUX_DEFAULT="quiet rootfstype=ext4 modules=sd-mod,usb-storage,ext4"
+GRUB_CMDLINE_LINUX=""
+GRUB_GFXMODE=auto
+GRUB_TERMINAL_OUTPUT="console"
+GRUB_DISABLE_OS_PROBER=false
+```
+
+Il ne reste plus qu'à charger le nouveau fichier de configuration grub : `grub-mkconfig -o /boot/grub/grub.cfg`.
+
+Après un reboot la machine devra charger les 2 menus d'entrées et permettre de choisir entre le mode console et graphique.
+
