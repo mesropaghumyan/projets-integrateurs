@@ -306,3 +306,76 @@ mv  /opt/ifshow /usr/local/bin/ifshow
 
 ...
 ```
+
+## Etape 5 : Configuration du NetLab
+
+### R0
+
+```shell
+configure
+set interfaces ethernet eth0 address 10.29.2.1/24
+set interfaces ethernet eth1 address 10.29.1.1/24
+set interfaces ethernet eth2 address 10.29.5.2/24
+set protocols static route 10.29.3.0/24 next-hop 10.29.5.1
+commit
+save
+```
+
+### R1
+
+```shell
+configure
+set interfaces ethernet eth0 address 10.29.5.1/24
+set interfaces ethernet eth1 address 192.168.29.5/30
+set protocols static route 10.29.1.0/24 next-hop 10.29.5.2
+set protocols static route 10.29.2.0/24 next-hop 10.29.5.2
+set protocols static route 10.29.3.0/24 next-hop 192.168.29.6
+commit
+save
+```
+
+### R2
+
+```shell
+configure
+set interfaces ethernet eth0 address 10.29.3.1/24
+set interfaces ethernet eth1 address 192.168.29.6/30
+set protocols static route 10.29.1.0/24 next-hop 192.168.29.5
+set protocols static route 10.29.2.0/24 next-hop 192.168.29.5
+commit
+save
+```
+
+### T1, T2 et T3 : MicroCore
+
+Pour rendre la configuration des addresses IPv4 sur les terminaux Core peristant, il faut ajouter les lignes ci-dessous dans chacune des machines dans le fichier `/opt/bootlocal.sh` :
+
+#### T1
+
+```shell
+sudo ifconfig eth0 10.29.1.101 netmask 255.255.255.0
+sudo route add default gw 10.29.1.1
+```
+
+#### T2
+
+```shell
+sudo ifconfig eth0 10.29.2.102 netmask 255.255.255.0
+sudo route add default gw 10.29.2.1
+```
+
+#### T3
+
+```shell
+sudo ifconfig eth0 10.29.3.103 netmask 255.255.255.0
+sudo route add default gw 10.29.3.1
+```
+
+### T4 : Alpine
+
+Pour le cas d'une machine Alpine, la machine est déjà persistante, il suffit donc d'entrer dans le terminal les commandes ci-dessous :
+
+```shell
+sudo ifconfig eth0 10.29.3.104 netmask 255.255.255.0
+sudo route add default gw 10.29.3.1
+```
